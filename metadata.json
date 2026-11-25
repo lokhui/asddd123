@@ -1,0 +1,6 @@
+{
+  "name": "CampusLoop — 校園二手物品循環與動態信用擔保交易市集",
+  "description": "專為大學校園設計的 C2C 二手循環交易市集，結合 .edu.tw 校園驗證、Gemini AI 拍照辨識與歷史 P25/P75 定價建議、畢業季整批打包、許願清單自動配對，以及動態信用擔保與面交 QR Code 核銷狀態機。",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
