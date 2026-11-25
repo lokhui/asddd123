@@ -1,9 +1,15 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { sha256Hash } from './auth.ts';
 import type { DatabaseState, Product, PublicUserSummary, Transaction, User } from './types.ts';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const BUNDLED_DATA_DIR = path.resolve(process.cwd(), 'data');
+const BUNDLED_DB_PATH = path.join(BUNDLED_DATA_DIR, 'campusloop-db.json');
+const IS_SERVERLESS = Boolean(
+  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY
+);
+const DATA_DIR = IS_SERVERLESS ? path.join(os.tmpdir(), 'campusloop-data') : BUNDLED_DATA_DIR;
 const DB_PATH = path.join(DATA_DIR, 'campusloop-db.json');
 
 function createInitialSeed(): DatabaseState {
@@ -494,11 +500,17 @@ class CampusStore {
 
   private loadOrSeed(): DatabaseState {
     try {
-      if (fs.existsSync(DB_PATH)) {
-        const raw = fs.readFileSync(DB_PATH, 'utf8');
-        const parsed = JSON.parse(raw) as DatabaseState;
-        if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.products)) {
-          return parsed;
+      const candidatePaths = IS_SERVERLESS ? [DB_PATH, BUNDLED_DB_PATH] : [DB_PATH];
+      for (const filePath of candidatePaths) {
+        if (fs.existsSync(filePath)) {
+          const raw = fs.readFileSync(filePath, 'utf8');
+          const parsed = JSON.parse(raw) as DatabaseState;
+          if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.products)) {
+            if (filePath !== DB_PATH) {
+              this.persistSync(parsed);
+            }
+            return parsed;
+          }
         }
       }
     } catch (err) {
@@ -510,12 +522,16 @@ class CampusStore {
   }
 
   private persistSync(snapshot: DatabaseState) {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      const tmpPath = `${DB_PATH}.tmp`;
+      fs.writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf8');
+      fs.renameSync(tmpPath, DB_PATH);
+    } catch (err) {
+      console.warn('Database persistence skipped (read-only or ephemeral environment):', err);
     }
-    const tmpPath = `${DB_PATH}.tmp`;
-    fs.writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf8');
-    fs.renameSync(tmpPath, DB_PATH);
   }
 
   public getSnapshot(): DatabaseState {

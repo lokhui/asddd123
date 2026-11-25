@@ -1,15 +1,24 @@
 import crypto from 'node:crypto';
 import type { User } from './types.ts';
 
-const JWT_SECRET =
-  process.env.JWT_SECRET && process.env.JWT_SECRET.trim().length >= 16
-    ? process.env.JWT_SECRET.trim()
-    : crypto.randomBytes(32).toString('hex');
+function resolveSigningSecret(envValue: string | undefined, purpose: string): string {
+  if (envValue && envValue.trim().length >= 16) {
+    return envValue.trim();
+  }
+  const deploymentSeed =
+    process.env.VERCEL_PROJECT_ID ||
+    process.env.VERCEL_GIT_REPO_ID ||
+    process.env.VERCEL_URL ||
+    process.env.GEMINI_API_KEY ||
+    process.env.APP_URL;
+  if (deploymentSeed && deploymentSeed !== 'MY_GEMINI_API_KEY' && deploymentSeed !== 'MY_APP_URL') {
+    return crypto.createHash('sha256').update(`campusloop:${purpose}:${deploymentSeed}`).digest('hex');
+  }
+  return crypto.randomBytes(32).toString('hex');
+}
 
-const QR_HMAC_SECRET =
-  process.env.QR_HMAC_SECRET && process.env.QR_HMAC_SECRET.trim().length >= 16
-    ? process.env.QR_HMAC_SECRET.trim()
-    : crypto.randomBytes(32).toString('hex');
+const JWT_SECRET = resolveSigningSecret(process.env.JWT_SECRET, 'jwt');
+const QR_HMAC_SECRET = resolveSigningSecret(process.env.QR_HMAC_SECRET, 'qr-hmac');
 
 const UNIVERSITY_DOMAIN_MAP: Record<string, string> = {
   'ntu.edu.tw': '國立臺灣大學',

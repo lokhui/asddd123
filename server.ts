@@ -3,17 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { registerApiRoutes } from './server/routes.ts';
+import { createApp } from './server/app.ts';
 
 async function startServer() {
-  const app = express();
+  const app = createApp();
   const port = Number(process.env.PORT) || 3000;
-
-  app.set('trust proxy', 1);
-  app.use(express.json({ limit: '10mb' }));
-
-  // Register RESTful /api/v1/* routes
-  registerApiRoutes(app);
 
   const distPath = path.resolve(process.cwd(), 'dist');
   const isProd = process.env.NODE_ENV === 'production' && fs.existsSync(distPath);
