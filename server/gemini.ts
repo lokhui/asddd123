@@ -3,8 +3,38 @@ import type { ConditionLevel, ProductCategory } from './types.ts';
 
 let aiClient: GoogleGenAI | null = null;
 
+export type DemoPresetKey = 'calculator' | 'textbook';
+
+export function isGeminiConfigured(): boolean {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  return Boolean(apiKey && apiKey !== 'MY_GEMINI_API_KEY');
+}
+
+export function getDemoSampleAnalysis(presetKey: DemoPresetKey): AiListingAnalysis {
+  if (presetKey === 'textbook') {
+    return {
+      category: '教科書',
+      condition_level: '85% 新',
+      suggested_title: '微積分與演算法精裝原文教科書組合（Calculus + CLRS）',
+      suggested_description:
+        '九成近全新大學理工科必備原文教科書組合，書角微使用痕跡、內頁乾淨僅有少量鉛筆重點標記，書脊完整無破損或水漬，適合修習微積分及資料結構與演算法課程之校內同學接手使用。',
+      keywords: ['微積分', '演算法', '原文書', '教科書', 'Calculus'],
+      estimated_new_price_twd: 1850,
+    };
+  }
+  return {
+    category: '3C 配件',
+    condition_level: '95% 新',
+    suggested_title: 'Casio fx-991EX 工程科學計算機（含原廠滑蓋）',
+    suggested_description:
+      '外觀保存約九五成新，螢幕清晰無刮痕、太陽能板與按鍵回饋皆測試正常，附原廠保護滑蓋，適合工學院工程數學、電路學與統計考試使用，歡迎相約校內安全面交熱點當場驗機取件。',
+    keywords: ['計算機', 'Casio', '工程計算機', 'fx-991'],
+    estimated_new_price_twd: 890,
+  };
+}
+
 function getAiClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
     throw new Error('GEMINI_API_KEY 未設定，請於環境密鑰設定後再試。');
   }

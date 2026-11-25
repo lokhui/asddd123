@@ -11,7 +11,12 @@ import {
   verifyJwt,
   verifyPasswordScrypt,
 } from './auth.ts';
-import { analyzeProductImage } from './gemini.ts';
+import {
+  analyzeProductImage,
+  getDemoSampleAnalysis,
+  isGeminiConfigured,
+  type DemoPresetKey,
+} from './gemini.ts';
 import { computeSuggestedPricing } from './pricing.ts';
 import { store } from './store.ts';
 import type {
@@ -398,7 +403,26 @@ export function registerApiRoutes(app: Express) {
         return;
       }
 
-      const analysis = await analyzeProductImage(base64Data, mimeType);
+      const rawPreset = req.body?.demoPresetKey;
+      const demoPresetKey: DemoPresetKey | null =
+        rawPreset === 'calculator' || rawPreset === 'textbook' ? rawPreset : null;
+
+      let analysis;
+      let analysisMode: 'gemini' | 'demo_preset' = 'gemini';
+
+      if (isGeminiConfigured()) {
+        analysis = await analyzeProductImage(base64Data, mimeType);
+      } else if (demoPresetKey) {
+        analysis = getDemoSampleAnalysis(demoPresetKey);
+        analysisMode = 'demo_preset';
+      } else {
+        res.status(503).json({
+          error:
+            '系統尚未設定 GEMINI_API_KEY，無法自動辨識自訂上傳照片；您可直接使用下方「試算 AI 範例圖」或手動填寫商品資訊上架。',
+        });
+        return;
+      }
+
       const db = store.getSnapshot();
       const pricing = computeSuggestedPricing(
         db.historicalPrices,
@@ -413,6 +437,7 @@ export function registerApiRoutes(app: Express) {
         analysis,
         pricing,
         exifStripped: true,
+        analysisMode,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'AI 商品辨識失敗，請稍後重試';

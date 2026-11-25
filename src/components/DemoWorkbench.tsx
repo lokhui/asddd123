@@ -209,7 +209,10 @@ export function DemoWorkbench({
       const aiRes = await apiFetch<AiAnalyzeResponse>('/api/v1/products/ai-analyze', {
         method: 'POST',
         overrideToken: sess.token,
-        body: JSON.stringify({ imageDataUrl: cleanDataUrl }),
+        body: JSON.stringify({
+          imageDataUrl: cleanDataUrl,
+          demoPresetKey: 'calculator',
+        }),
       });
 
       const pubRes = await apiFetch<{ product: Product; matchedWishlistCount: number }>(
@@ -234,9 +237,11 @@ export function DemoWorkbench({
 
       await onRefreshAll();
       onNavigateTab('marketplace');
+      const modeTag =
+        aiRes.analysisMode === 'demo_preset' ? '示範樣本辨識' : 'Gemini 視覺辨識';
       setOutcome('demo2', {
         status: 'done',
-        summary: `AI 辨識為「${aiRes.analysis.category} · ${aiRes.analysis.condition_level}」並已發布`,
+        summary: `${modeTag}為「${aiRes.analysis.category} · ${aiRes.analysis.condition_level}」並已發布`,
         detail: `文案 ${aiRes.analysis.suggested_description.length} 字 · 校內建議價 NT$ ${aiRes.pricing.minSuggested}–${aiRes.pricing.maxSuggested} · 配對 ${pubRes.matchedWishlistCount} 筆許願單`,
       });
     } catch (err) {

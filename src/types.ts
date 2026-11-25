@@ -183,4 +183,5 @@ export interface AiAnalyzeResponse {
     matchedSamples: Array<{ title: string; soldPrice: number; soldAt: string }>;
   };
   exifStripped: boolean;
+  analysisMode?: 'gemini' | 'demo_preset';
 }

@@ -48,13 +48,16 @@ export function AiListingModal({ open, onClose, onPublished }: AiListingModalPro
 
   if (!open) return null;
 
-  const runAiAnalyze = async (primaryDataUrl: string) => {
+  const runAiAnalyze = async (
+    primaryDataUrl: string,
+    demoPresetKey?: 'calculator' | 'textbook'
+  ) => {
     setAnalyzing(true);
     setError('');
     try {
       const result = await apiFetch<AiAnalyzeResponse>('/api/v1/products/ai-analyze', {
         method: 'POST',
-        body: JSON.stringify({ imageDataUrl: primaryDataUrl }),
+        body: JSON.stringify({ imageDataUrl: primaryDataUrl, demoPresetKey }),
       });
       setCategory(result.analysis.category);
       setConditionLevel(result.analysis.condition_level);
@@ -97,7 +100,10 @@ export function AiListingModal({ open, onClose, onPublished }: AiListingModalPro
     }
   };
 
-  const handleTestSamplePhoto = async (samplePath: string) => {
+  const handleTestSamplePhoto = async (
+    samplePath: string,
+    demoPresetKey: 'calculator' | 'textbook'
+  ) => {
     setError('');
     try {
       const res = await fetch(samplePath);
@@ -106,7 +112,7 @@ export function AiListingModal({ open, onClose, onPublished }: AiListingModalPro
       const cleanDataUrl = await stripImageExif(file);
       setImages([cleanDataUrl]);
       setExifCleared(true);
-      await runAiAnalyze(cleanDataUrl);
+      await runAiAnalyze(cleanDataUrl, demoPresetKey);
     } catch (err) {
       setError(err instanceof Error ? err.message : '載入範例照片失敗');
     }
@@ -201,7 +207,10 @@ export function AiListingModal({ open, onClose, onPublished }: AiListingModalPro
                 <button
                   type="button"
                   onClick={() =>
-                    handleTestSamplePhoto('/src/assets/images/product_calculator_scientific_1795605809857.jpg')
+                    handleTestSamplePhoto(
+                      '/src/assets/images/product_calculator_scientific_1795605809857.jpg',
+                      'calculator'
+                    )
                   }
                   disabled={analyzing}
                   className="text-xs font-medium text-emerald-900 hover:underline cursor-pointer"
@@ -212,7 +221,10 @@ export function AiListingModal({ open, onClose, onPublished }: AiListingModalPro
                 <button
                   type="button"
                   onClick={() =>
-                    handleTestSamplePhoto('/src/assets/images/product_textbook_stack_1795605810825.jpg')
+                    handleTestSamplePhoto(
+                      '/src/assets/images/product_textbook_stack_1795605810825.jpg',
+                      'textbook'
+                    )
                   }
                   disabled={analyzing}
                   className="text-xs font-medium text-emerald-900 hover:underline cursor-pointer"
